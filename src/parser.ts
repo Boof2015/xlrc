@@ -123,8 +123,8 @@ function applyHeader(
   }
 
   if (key === "offset") {
-    const parsedOffset = Number.parseInt(value, 10);
-    if (!Number.isFinite(parsedOffset)) {
+    const parsedOffset = Number(value);
+    if (!/^[-+]?\d+$/.test(value) || !Number.isSafeInteger(parsedOffset)) {
       warn(warnings, line, "malformed-offset", "Offset header is not a valid integer");
       return;
     }
@@ -278,6 +278,11 @@ function parseFuriganaText(input: string, line: number, warnings: ValidationWarn
 
     if (mayBeFurigana && isKana(reading)) {
       const start = findFuriganaBaseStart(text);
+      if (start === undefined) {
+        text += character;
+        continue;
+      }
+
       const base = text.slice(start);
       furigana.push({
         start,
@@ -328,7 +333,7 @@ function readTimestamp(minutesValue = "", secondsValue = "", centisecondsValue =
   };
 }
 
-function findFuriganaBaseStart(text: string): number {
+function findFuriganaBaseStart(text: string): number | undefined {
   let start = text.length;
 
   while (start > 0 && isKanji(text[start - 1] ?? "")) {
@@ -339,7 +344,7 @@ function findFuriganaBaseStart(text: string): number {
     return start;
   }
 
-  return Math.max(0, text.length - 1);
+  return undefined;
 }
 
 function isKana(value: string): boolean {

@@ -63,7 +63,13 @@ function validateMeta(file: XLRCFile, warnings: ValidationWarning[]): void {
 }
 
 function validateLine(line: XLRCLine, index: number, warnings: ValidationWarning[]): void {
+  if (!line || typeof line !== "object") {
+    warn(warnings, index + 1, "invalid-line", "Line must be an object");
+    return;
+  }
+
   const warningLine = line.line ?? index + 1;
+  const lineText = typeof line.text === "string" ? line.text : "";
 
   if (!isValidTimestamp(line.timestamp)) {
     warn(warnings, warningLine, "invalid-line-timestamp", "Line timestamp must be a non-negative finite integer");
@@ -89,7 +95,7 @@ function validateLine(line: XLRCLine, index: number, warnings: ValidationWarning
     warn(warnings, warningLine, "invalid-empty-flag", "Line isEmpty must be a boolean");
   }
 
-  validateFurigana(line.furigana, line.text, warningLine, warnings);
+  validateFurigana(line.furigana, lineText, warningLine, warnings);
 
   if (!Array.isArray(line.words)) {
     warn(warnings, warningLine, "invalid-words", "Line words must be an array");
@@ -113,7 +119,13 @@ function validateLine(line: XLRCLine, index: number, warnings: ValidationWarning
 }
 
 function validateWord(word: XLRCWord, parentLine: number, warnings: ValidationWarning[]): void {
+  if (!word || typeof word !== "object") {
+    warn(warnings, parentLine, "invalid-word", "Word must be an object");
+    return;
+  }
+
   const warningLine = word.line ?? parentLine;
+  const wordText = typeof word.text === "string" ? word.text : "";
 
   if (!isValidTimestamp(word.timestamp)) {
     warn(warnings, warningLine, "invalid-word-timestamp", "Word timestamp must be a non-negative finite integer");
@@ -127,7 +139,7 @@ function validateWord(word: XLRCWord, parentLine: number, warnings: ValidationWa
     warn(warnings, warningLine, "invalid-word-source-text", "Word sourceText must be a string when present");
   }
 
-  validateFurigana(word.furigana, word.text, warningLine, warnings);
+  validateFurigana(word.furigana, wordText, warningLine, warnings);
 }
 
 function validateFurigana(

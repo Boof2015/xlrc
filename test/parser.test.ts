@@ -72,4 +72,26 @@ describe("parseXLRC", () => {
       "unrecognized-line"
     ]);
   });
+
+  it("requires furigana annotations to attach directly to kanji", () => {
+    const file = parseXLRC("[00:00.00]abc[かな]\n[00:01.00]私[わたし]\n");
+
+    expect(file.lines[0]).toMatchObject({
+      text: "abc[かな]",
+      furigana: []
+    });
+    expect(file.lines[1]).toMatchObject({
+      text: "私",
+      furigana: [
+        { start: 0, end: 1, base: "私", reading: "わたし", line: 2 }
+      ]
+    });
+  });
+
+  it("warns on partially numeric offsets", () => {
+    const file = parseXLRC("[offset:12abc]\n[00:00.00]x\n");
+
+    expect(file.meta.offset).toBeUndefined();
+    expect(file.warnings.map((warning) => warning.code)).toEqual(["malformed-offset"]);
+  });
 });

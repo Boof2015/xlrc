@@ -64,4 +64,32 @@ describe("validateXLRC", () => {
       "invalid-translation-lang"
     ]);
   });
+
+  it("does not throw when validating malformed JavaScript input", () => {
+    const file = {
+      meta: {},
+      lines: [
+        {
+          timestamp: 0,
+          text: 1,
+          isEmpty: false,
+          words: [
+            null
+          ],
+          furigana: [
+            { start: 0, end: 1, base: "x", reading: "あ" }
+          ],
+          translations: []
+        }
+      ],
+      warnings: []
+    } as unknown as XLRCFile;
+
+    expect(() => validateXLRC(file)).not.toThrow();
+    expect(validateXLRC(file).warnings.map((warning) => warning.code)).toEqual([
+      "invalid-line-text",
+      "invalid-furigana-range",
+      "invalid-word"
+    ]);
+  });
 });
