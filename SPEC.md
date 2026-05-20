@@ -104,8 +104,18 @@ Inline readings for kanji, written immediately after the target text in square b
 
 - Format: `kanji[reading]`
 - Readings are hiragana or katakana.
-- Applies only to the characters directly preceding the bracket pair.
+- Applies to the immediately preceding contiguous kanji span.
 - Multiple annotations on a single line are supported.
+- Kana characters do not require annotation because their reading is already explicit.
+
+Annotate only the kanji portion of mixed kanji/kana words:
+
+```
+[00:12.40]食[た]べる     ← correct: reading is placed above 食 only
+[00:12.40]食べる[たべる] ← incorrect: mixed kanji/kana base is ambiguous
+```
+
+Renderers place the reading above the kanji span only; surrounding kana is left untouched.
 
 **Disambiguation:** A furigana bracket is distinguished from a timestamp or header tag by context — it follows a non-whitespace, non-`]` character and its contents consist entirely of kana. Example of ambiguity resolved:
 

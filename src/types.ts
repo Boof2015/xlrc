@@ -23,7 +23,7 @@ export interface XLRCLine {
   text: string;
   sourceText?: string;
   rawText?: string;
-  voice?: string | null;
+  voice: string | null;
   isEmpty: boolean;
   words: XLRCWord[];
   furigana: XLRCFurigana[];

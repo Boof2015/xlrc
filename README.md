@@ -43,6 +43,15 @@ const xlrc = serializeXLRC(file);
 
 Parses an XLRC string into structured metadata, lyric lines, translations, word timings, furigana, and parser warnings. Malformed input is non-fatal; warnings are returned on `file.warnings`.
 
+For each parsed lyric line:
+
+- `text` is the clean display text with word timing and furigana markup removed.
+- `sourceText` is the lyric text after word timing tags are removed, with furigana markup preserved.
+- `rawText` is the original lyric body after the line timestamp and optional voice tag.
+- `voice` is a string label or `null` when the line is unattributed.
+
+Furigana entries refer to contiguous kanji spans in `text`. Kana around the span is left as normal display text, so `食[た]べる` renders ruby over `食` and leaves `べる` untouched.
+
 ### `serializeXLRC(file: XLRCFile): string`
 
 Serializes a structured XLRC object to canonical XLRC text.
