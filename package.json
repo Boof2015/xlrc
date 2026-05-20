@@ -1,0 +1,25 @@
+{
+  "name": "xlrc",
+  "version": "0.0.1",
+  "description": "Parser and toolkit for the XLRC lyric format",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Boof2015/xlrc.git"
+  },
+  "keywords": [
+    "lyrics",
+    "lrc",
+    "xlrc",
+    "music"
+  ],
+  "author": "Boof2015",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Boof2015/xlrc/issues"
+  },
+  "homepage": "https://github.com/Boof2015/xlrc#readme"
+}
