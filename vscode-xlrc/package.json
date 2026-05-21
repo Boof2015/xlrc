@@ -1,0 +1,136 @@
+{
+  "name": "xlrc-editor",
+  "displayName": "XLRC Editor",
+  "description": "Native VS Code custom editor for XLRC lyric files.",
+  "version": "0.0.2",
+  "publisher": "boof2015",
+  "icon": "media/icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Boof2015/xlrc.git",
+    "directory": "vscode-xlrc"
+  },
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "xlrc",
+    "lyrics",
+    "lrc",
+    "karaoke"
+  ],
+  "activationEvents": [
+    "onCustomEditor:xlrc.editor",
+    "onLanguage:xlrc"
+  ],
+  "main": "./dist/extension.js",
+  "files": [
+    "dist/extension.js",
+    "dist/extension.js.map",
+    "dist/webview",
+    "syntaxes",
+    "language-configuration.json",
+    "media",
+    "README.md",
+    "LICENSE"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "xlrc",
+        "aliases": [
+          "XLRC",
+          "xlrc"
+        ],
+        "extensions": [
+          ".xlrc"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "xlrc",
+        "scopeName": "source.xlrc",
+        "path": "./syntaxes/xlrc.tmLanguage.json"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "xlrc.editor",
+        "displayName": "XLRC Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.xlrc"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "xlrc.openAsText",
+        "title": "XLRC: Open As Text"
+      },
+      {
+        "command": "xlrc.loadAudio",
+        "title": "XLRC: Load Audio"
+      },
+      {
+        "command": "xlrc.clearRememberedAudio",
+        "title": "XLRC: Clear Remembered Audio"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "xlrc.openAsText"
+        },
+        {
+          "command": "xlrc.loadAudio"
+        },
+        {
+          "command": "xlrc.clearRememberedAudio"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "xlrc.openAsText",
+          "when": "resourceExtname == .xlrc",
+          "group": "navigation@50"
+        },
+        {
+          "command": "xlrc.loadAudio",
+          "when": "resourceExtname == .xlrc",
+          "group": "navigation@51"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "render:icon": "node scripts/render-icon.mjs",
+    "compile": "node esbuild.mjs",
+    "compile:tests": "node esbuild.mjs --tests",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:integration": "npm run compile && npm run compile:tests && node ./dist/test/runTest.js",
+    "test": "npm run typecheck && npm run test:unit",
+    "package": "npm run render:icon && npm run compile && vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.12.12",
+    "@types/vscode": "^1.92.0",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.21.5",
+    "mocha": "^10.7.3",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

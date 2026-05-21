@@ -1,0 +1,54 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "XLRC",
+  "scopeName": "source.xlrc",
+  "patterns": [
+    {
+      "name": "meta.header.xlrc",
+      "match": "^(\\[)([A-Za-z][A-Za-z0-9_-]*)(:)([^\\]]*)(\\])$",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.xlrc" },
+        "2": { "name": "entity.name.tag.header.xlrc" },
+        "3": { "name": "punctuation.separator.key-value.xlrc" },
+        "4": { "name": "string.unquoted.header-value.xlrc" },
+        "5": { "name": "punctuation.definition.tag.end.xlrc" }
+      }
+    },
+    {
+      "name": "meta.translation.xlrc",
+      "match": "^(\\[>)([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)(\\])(.*)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.translation.begin.xlrc" },
+        "2": { "name": "support.constant.language.xlrc" },
+        "3": { "name": "punctuation.definition.translation.end.xlrc" },
+        "4": { "name": "string.unquoted.translation.xlrc" }
+      }
+    },
+    {
+      "name": "meta.lyric-line.xlrc",
+      "match": "^(\\[\\d+:\\d{2}\\.\\d{2}\\])(\\[v:[^\\]]*\\])?(.*)$",
+      "captures": {
+        "1": { "name": "constant.numeric.timestamp.line.xlrc" },
+        "2": { "name": "entity.name.label.voice.xlrc" },
+        "3": { "patterns": [{ "include": "#inline" }] }
+      }
+    },
+    {
+      "include": "#inline"
+    }
+  ],
+  "repository": {
+    "inline": {
+      "patterns": [
+        {
+          "name": "constant.numeric.timestamp.word.xlrc",
+          "match": "<\\d+:\\d{2}\\.\\d{2}>"
+        },
+        {
+          "name": "markup.ruby.furigana.xlrc",
+          "match": "(?<=\\S)\\[[\\u3040-\\u309f\\u30a0-\\u30ff\\u31f0-\\u31ff\\uff66-\\uff9f]+\\]"
+        }
+      ]
+    }
+  }
+}
