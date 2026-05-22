@@ -59,6 +59,78 @@ describe("parseXLRC", () => {
     expect(file.lines.map((line) => line.translations[0]?.text)).toEqual(["You are", "I am", "Together"]);
   });
 
+  it("parses common LRC line timestamp variants", () => {
+    const file = parseXLRC(
+      [
+        "[00:10]No fraction",
+        "[00:10.4]Tenths",
+        "[00:10.40]Centiseconds",
+        "[00:10.405]Milliseconds",
+        ""
+      ].join("\n")
+    );
+
+    expect(file.lines.map((line) => [line.timestamp, line.text])).toEqual([
+      [10_000, "No fraction"],
+      [10_400, "Tenths"],
+      [10_400, "Centiseconds"],
+      [10_405, "Milliseconds"]
+    ]);
+    expect(file.warnings).toEqual([]);
+  });
+
+  it("expands repeated LRC line timestamps into separate lyric lines", () => {
+    const file = parseXLRC("[00:10.00][00:20.00]Same lyric\n");
+
+    expect(file.lines.map((line) => [line.timestamp, line.text, line.rawText, line.line])).toEqual([
+      [10_000, "Same lyric", "Same lyric", 1],
+      [20_000, "Same lyric", "Same lyric", 1]
+    ]);
+    expect(file.warnings).toEqual([]);
+  });
+
+  it("keeps XLRC body features when expanding repeated LRC timestamps", () => {
+    const file = parseXLRC("[00:10][00:20.500][v:A]私[わたし]が歌[うた]う\n[>en]I sing\n");
+
+    expect(file.lines.map((line) => [line.timestamp, line.voice, line.text])).toEqual([
+      [10_000, "A", "私が歌う"],
+      [20_500, "A", "私が歌う"]
+    ]);
+    expect(file.lines[0]?.furigana).toEqual([
+      { start: 0, end: 1, base: "私", reading: "わたし", line: 1 },
+      { start: 2, end: 3, base: "歌", reading: "うた", line: 1 }
+    ]);
+    expect(file.lines.map((line) => line.translations)).toEqual([
+      [{ lang: "en", text: "I sing", line: 2 }],
+      [{ lang: "en", text: "I sing", line: 2 }]
+    ]);
+    expect(file.warnings).toEqual([]);
+  });
+
+  it("warns once for repeated LRC timestamp body problems", () => {
+    const file = parseXLRC("[00:10][00:20]歌[sing]う\n");
+
+    expect(file.lines.map((line) => line.text)).toEqual(["歌[sing]う", "歌[sing]う"]);
+    expect(file.warnings.map((warning) => warning.code)).toEqual(["malformed-furigana"]);
+  });
+
+  it("parses common LRC enhanced word timestamp variants", () => {
+    const file = parseXLRC("[00:00]<00:00>zero<00:00.4>one<00:00.40>two<00:00.405>three\n");
+
+    expect(file.lines[0]).toMatchObject({
+      timestamp: 0,
+      text: "zeroonetwothree",
+      sourceText: "zeroonetwothree"
+    });
+    expect(file.lines[0]?.words.map((word) => [word.timestamp, word.text])).toEqual([
+      [0, "zero"],
+      [400, "one"],
+      [400, "two"],
+      [405, "three"]
+    ]);
+    expect(file.warnings).toEqual([]);
+  });
+
   it("warns and continues on malformed input", () => {
     const file = parseXLRC(fixture("malformed.xlrc"));
 
@@ -93,5 +165,11 @@ describe("parseXLRC", () => {
 
     expect(file.meta.offset).toBeUndefined();
     expect(file.warnings.map((warning) => warning.code)).toEqual(["malformed-offset"]);
+  });
+
+  it("keeps existing XLRC fixtures warning-free", () => {
+    for (const name of ["basic.xlrc", "full.xlrc", "multivoice.xlrc"]) {
+      expect(parseXLRC(fixture(name)).warnings, name).toEqual([]);
+    }
   });
 });

@@ -9,10 +9,13 @@ import type {
 } from "./types";
 
 const HEADER_TAG_PATTERN = /^\[([A-Za-z][A-Za-z0-9_-]*):([^\]]*)\]$/;
-const LINE_TIMESTAMP_PATTERN = /^\[(\d+):(\d{2})\.(\d{2})\](.*)$/;
+const TIMESTAMP_PATTERN_SOURCE = String.raw`\d+:\d{2}(?:\.\d{1,3})?`;
+const TIMESTAMP_VALUE_PATTERN = new RegExp(`^(${TIMESTAMP_PATTERN_SOURCE})$`);
+const LINE_TIMESTAMP_PATTERN = new RegExp(`^\\[(${TIMESTAMP_PATTERN_SOURCE})\\]`);
 const TRANSLATION_PATTERN = /^\[>([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\](.*)$/;
 const VOICE_PATTERN = /^\[v:([^\]]*)\](.*)$/;
-const WORD_TIMESTAMP_PATTERN = /<(\d+):(\d{2})\.(\d{2})>/g;
+const WORD_TIMESTAMP_PATTERN = new RegExp(`<(${TIMESTAMP_PATTERN_SOURCE})>`, "g");
+const WORD_TIMESTAMP_TAG_PATTERN = new RegExp(`^<${TIMESTAMP_PATTERN_SOURCE}>$`);
 const ANY_ANGLE_TAG_PATTERN = /<[^>]*>/g;
 const KANA_PATTERN = /^[\u3040-\u309f\u30a0-\u30ff\u31f0-\u31ff\uff66-\uff9f]+$/u;
 const KANJI_PATTERN = /[\u3400-\u9fff々〆ヵヶ]/u;
@@ -23,6 +26,13 @@ interface TimestampResult {
   timestamp: number;
   warning?: string;
 }
+
+interface ParsedLineTimestamps {
+  timestamps: number[];
+  body: string;
+}
+
+type ParsedLineTimestampsResult = ParsedLineTimestamps | "malformed" | undefined;
 
 interface ParsedLyricContent {
   text: string;
@@ -41,7 +51,7 @@ export function parseXLRC(input: string): XLRCFile {
   const meta: XLRCMeta = {};
   const lines: XLRCLine[] = [];
   const rows = input.replace(/^\uFEFF/, "").split(/\r?\n/);
-  let lastLyricLine: XLRCLine | undefined;
+  let lastLyricLines: XLRCLine[] = [];
   let inHeader = true;
 
   rows.forEach((rawLine, index) => {
@@ -54,29 +64,36 @@ export function parseXLRC(input: string): XLRCFile {
 
     const translation = parseTranslationLine(line, lineNumber, warnings);
     if (translation) {
-      if (!lastLyricLine) {
+      if (lastLyricLines.length === 0) {
         warn(warnings, lineNumber, "orphan-translation", "Translation line has no preceding lyric line");
         return;
       }
 
-      lastLyricLine.translations.push(translation);
+      lastLyricLines.forEach((lyricLine) => lyricLine.translations.push({ ...translation }));
       return;
     }
 
-    const timestampMatch = line.match(LINE_TIMESTAMP_PATTERN);
-    if (timestampMatch) {
+    const timestampLine = parseLineTimestamps(line, lineNumber, warnings);
+    if (timestampLine === "malformed") {
       inHeader = false;
-      const timestamp = readTimestamp(timestampMatch[1], timestampMatch[2], timestampMatch[3]);
-      if (timestamp.warning) {
-        warn(warnings, lineNumber, "malformed-timestamp", timestamp.warning);
-        lastLyricLine = undefined;
+      lastLyricLines = [];
+      return;
+    }
+
+    if (timestampLine) {
+      inHeader = false;
+      const [firstTimestamp, ...additionalTimestamps] = timestampLine.timestamps;
+      if (firstTimestamp === undefined) {
+        lastLyricLines = [];
         return;
       }
 
-      const body = timestampMatch[4] ?? "";
-      const parsedLine = parseLyricLineBody(timestamp.timestamp, body, lineNumber, warnings);
-      lines.push(parsedLine);
-      lastLyricLine = parsedLine;
+      const firstLine = parseLyricLineBody(firstTimestamp, timestampLine.body, lineNumber, warnings);
+      lastLyricLines = [
+        firstLine,
+        ...additionalTimestamps.map((timestamp) => cloneLyricLine(firstLine, timestamp))
+      ];
+      lines.push(...lastLyricLines);
       return;
     }
 
@@ -90,24 +107,71 @@ export function parseXLRC(input: string): XLRCFile {
 
     if (/^\[\d+:\d/.test(line)) {
       warn(warnings, lineNumber, "malformed-timestamp", "Malformed timestamp; line was skipped");
-      lastLyricLine = undefined;
+      lastLyricLines = [];
       inHeader = false;
       return;
     }
 
     if (line.startsWith("[")) {
       warn(warnings, lineNumber, "unrecognized-line", "Unrecognized line prefix; line was skipped");
-      lastLyricLine = undefined;
+      lastLyricLines = [];
       inHeader = false;
       return;
     }
 
     warn(warnings, lineNumber, "unrecognized-line", "Line has no timestamp or supported tag; line was skipped");
-    lastLyricLine = undefined;
+    lastLyricLines = [];
     inHeader = false;
   });
 
   return { meta, lines, warnings };
+}
+
+function parseLineTimestamps(
+  line: string,
+  lineNumber: number,
+  warnings: ValidationWarning[]
+): ParsedLineTimestampsResult {
+  const timestamps: number[] = [];
+  let cursor = 0;
+
+  while (cursor < line.length) {
+    const timestampMatch = line.slice(cursor).match(LINE_TIMESTAMP_PATTERN);
+    if (!timestampMatch) {
+      break;
+    }
+
+    const timestamp = readTimestamp(timestampMatch[1] ?? "");
+    if (timestamp.warning) {
+      warn(warnings, lineNumber, "malformed-timestamp", timestamp.warning);
+      return "malformed";
+    }
+
+    timestamps.push(timestamp.timestamp);
+    cursor += timestampMatch[0].length;
+  }
+
+  if (timestamps.length === 0) {
+    return undefined;
+  }
+
+  return {
+    timestamps,
+    body: line.slice(cursor)
+  };
+}
+
+function cloneLyricLine(line: XLRCLine, timestamp: number): XLRCLine {
+  return {
+    ...line,
+    timestamp,
+    words: line.words.map((word) => ({
+      ...word,
+      furigana: word.furigana.map((entry) => ({ ...entry }))
+    })),
+    furigana: line.furigana.map((entry) => ({ ...entry })),
+    translations: []
+  };
 }
 
 function applyHeader(
@@ -229,7 +293,7 @@ function parseWords(rawText: string, line: number, warnings: ValidationWarning[]
   const words: XLRCWord[] = [];
 
   matches.forEach((match, index) => {
-    const timestamp = readTimestamp(match[1], match[2], match[3]);
+    const timestamp = readTimestamp(match[1] ?? "");
     if (timestamp.warning) {
       warn(warnings, line, "malformed-word-timestamp", timestamp.warning, match.index);
       return;
@@ -309,18 +373,24 @@ function parseFuriganaText(input: string, line: number, warnings: ValidationWarn
 function warnForMalformedWordTags(rawText: string, line: number, warnings: ValidationWarning[]): void {
   for (const match of rawText.matchAll(ANY_ANGLE_TAG_PATTERN)) {
     const tag = match[0];
-    if (!/^<\d+:\d{2}\.\d{2}>$/.test(tag)) {
+    if (!WORD_TIMESTAMP_TAG_PATTERN.test(tag)) {
       warn(warnings, line, "malformed-word-timestamp", "Malformed word timestamp was treated as literal text", match.index);
     }
   }
 }
 
-function readTimestamp(minutesValue = "", secondsValue = "", centisecondsValue = ""): TimestampResult {
+function readTimestamp(value: string): TimestampResult {
+  const timestampMatch = value.match(TIMESTAMP_VALUE_PATTERN);
+  if (!timestampMatch) {
+    return { timestamp: 0, warning: "Timestamp contains non-numeric values" };
+  }
+
+  const [minutesValue = "", secondsAndFractionValue = ""] = (timestampMatch[1] ?? "").split(":");
+  const [secondsValue = "", fractionValue = ""] = secondsAndFractionValue.split(".");
   const minutes = Number.parseInt(minutesValue, 10);
   const seconds = Number.parseInt(secondsValue, 10);
-  const centiseconds = Number.parseInt(centisecondsValue, 10);
 
-  if (!Number.isFinite(minutes) || !Number.isFinite(seconds) || !Number.isFinite(centiseconds)) {
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) {
     return { timestamp: 0, warning: "Timestamp contains non-numeric values" };
   }
 
@@ -329,8 +399,16 @@ function readTimestamp(minutesValue = "", secondsValue = "", centisecondsValue =
   }
 
   return {
-    timestamp: minutes * 60_000 + seconds * 1_000 + centiseconds * 10
+    timestamp: minutes * 60_000 + seconds * 1_000 + readFractionMilliseconds(fractionValue)
   };
+}
+
+function readFractionMilliseconds(value: string): number {
+  if (value.length === 0) {
+    return 0;
+  }
+
+  return Number.parseInt(value.padEnd(3, "0"), 10);
 }
 
 function findFuriganaBaseStart(text: string): number | undefined {
