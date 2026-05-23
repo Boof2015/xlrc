@@ -131,6 +131,33 @@ describe("parseXLRC", () => {
     expect(file.warnings).toEqual([]);
   });
 
+  it("parses adjacent furigana annotations without overlapping ranges", () => {
+    const file = parseXLRC("[00:00.00]たった今[いま]発散[はっさん]して\n");
+
+    expect(file.lines[0]).toMatchObject({
+      text: "たった今発散して",
+      furigana: [
+        { start: 3, end: 4, base: "今", reading: "いま", line: 1 },
+        { start: 4, end: 6, base: "発散", reading: "はっさん", line: 1 }
+      ]
+    });
+    expect(file.lines[0]?.furigana[1]?.start).toBeGreaterThanOrEqual(file.lines[0]?.furigana[0]?.end ?? 0);
+    expect(file.warnings).toEqual([]);
+  });
+
+  it("parses adjacent furigana annotations inside word-timed segments", () => {
+    const file = parseXLRC("[00:00.00]<00:00.00>たった今[いま]発散[はっさん]して\n");
+
+    expect(file.lines[0]?.words[0]).toMatchObject({
+      text: "たった今発散して",
+      furigana: [
+        { start: 3, end: 4, base: "今", reading: "いま", line: 1 },
+        { start: 4, end: 6, base: "発散", reading: "はっさん", line: 1 }
+      ]
+    });
+    expect(file.warnings).toEqual([]);
+  });
+
   it("warns and continues on malformed input", () => {
     const file = parseXLRC(fixture("malformed.xlrc"));
 
@@ -158,6 +185,21 @@ describe("parseXLRC", () => {
         { start: 0, end: 1, base: "私", reading: "わたし", line: 2 }
       ]
     });
+    expect(file.warnings).toEqual([]);
+  });
+
+  it("warns on mixed kanji-kana furigana bases", () => {
+    const file = parseXLRC("[00:00.00]無い[ない]\n[00:01.00]abc[かな]\n");
+
+    expect(file.lines[0]).toMatchObject({
+      text: "無い[ない]",
+      furigana: []
+    });
+    expect(file.lines[1]).toMatchObject({
+      text: "abc[かな]",
+      furigana: []
+    });
+    expect(file.warnings.map((warning) => [warning.line, warning.code])).toEqual([[1, "malformed-furigana"]]);
   });
 
   it("warns on partially numeric offsets", () => {

@@ -319,6 +319,7 @@ function parseWords(rawText: string, line: number, warnings: ValidationWarning[]
 
 function parseFuriganaText(input: string, line: number, warnings: ValidationWarning[]): ParsedFuriganaText {
   let text = "";
+  let furiganaBaseBoundary = 0;
   const furigana: XLRCFurigana[] = [];
   const warnedColumns = new Set<number>();
 
@@ -341,8 +342,19 @@ function parseFuriganaText(input: string, line: number, warnings: ValidationWarn
       Boolean(previousCharacter) && !/\s/.test(previousCharacter ?? "") && previousCharacter !== "]";
 
     if (mayBeFurigana && isKana(reading)) {
-      const start = findFuriganaBaseStart(text);
+      const start = findFuriganaBaseStart(text, furiganaBaseBoundary);
       if (start === undefined) {
+        if (hasMixedKanaFuriganaBase(text, furiganaBaseBoundary) && !warnedColumns.has(index)) {
+          warnedColumns.add(index);
+          warn(
+            warnings,
+            line,
+            "malformed-furigana",
+            "Furigana must attach directly to kanji; annotate only the kanji portion",
+            index + 1
+          );
+        }
+
         text += character;
         continue;
       }
@@ -355,6 +367,7 @@ function parseFuriganaText(input: string, line: number, warnings: ValidationWarn
         reading,
         line
       });
+      furiganaBaseBoundary = text.length;
       index = closeIndex;
       continue;
     }
@@ -411,10 +424,10 @@ function readFractionMilliseconds(value: string): number {
   return Number.parseInt(value.padEnd(3, "0"), 10);
 }
 
-function findFuriganaBaseStart(text: string): number | undefined {
+function findFuriganaBaseStart(text: string, lowerBound = 0): number | undefined {
   let start = text.length;
 
-  while (start > 0 && isKanji(text[start - 1] ?? "")) {
+  while (start > lowerBound && isKanji(text[start - 1] ?? "")) {
     start -= 1;
   }
 
@@ -423,6 +436,31 @@ function findFuriganaBaseStart(text: string): number | undefined {
   }
 
   return undefined;
+}
+
+function hasMixedKanaFuriganaBase(text: string, lowerBound: number): boolean {
+  let index = text.length;
+  let hasKanaCharacter = false;
+  let hasKanjiCharacter = false;
+
+  while (index > lowerBound) {
+    const character = text[index - 1] ?? "";
+    if (isKana(character)) {
+      hasKanaCharacter = true;
+      index -= 1;
+      continue;
+    }
+
+    if (isKanji(character)) {
+      hasKanjiCharacter = true;
+      index -= 1;
+      continue;
+    }
+
+    break;
+  }
+
+  return hasKanaCharacter && hasKanjiCharacter;
 }
 
 function isKana(value: string): boolean {
