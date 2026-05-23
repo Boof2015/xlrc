@@ -9,6 +9,7 @@ import type {
 } from "./types";
 
 const LANGUAGE_TAG_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
+const LENGTH_TAG_PATTERN = /^\d+:[0-5]\d$/;
 const KANA_PATTERN = /^[\u3040-\u309f\u30a0-\u30ff\u31f0-\u31ff\uff66-\uff9f]+$/u;
 
 export function validateXLRC(file: XLRCFile): ValidationResult {
@@ -37,6 +38,10 @@ function validateMeta(file: XLRCFile, warnings: ValidationWarning[]): void {
 
   if (file.meta.offset !== undefined && !Number.isInteger(file.meta.offset)) {
     warn(warnings, 0, "invalid-offset", "Meta offset must be an integer number of milliseconds");
+  }
+
+  if (file.meta.length !== undefined && !isLengthTag(file.meta.length)) {
+    warn(warnings, 0, "invalid-length", "Meta length must use mm:ss format");
   }
 
   if (file.meta.lang !== undefined && !isLanguageTag(file.meta.lang)) {
@@ -180,6 +185,10 @@ function isValidTimestamp(value: number): boolean {
 
 function isLanguageTag(value: unknown): value is string {
   return typeof value === "string" && LANGUAGE_TAG_PATTERN.test(value);
+}
+
+function isLengthTag(value: unknown): value is string {
+  return typeof value === "string" && LENGTH_TAG_PATTERN.test(value);
 }
 
 function isSerializableMetaValue(value: XLRCMetaValue): boolean {

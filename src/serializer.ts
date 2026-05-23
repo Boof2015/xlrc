@@ -1,6 +1,6 @@
 import type { XLRCFile, XLRCFurigana, XLRCLine, XLRCMeta, XLRCMetaValue, XLRCWord } from "./types";
 
-const KNOWN_META_ORDER = ["ti", "ar", "al", "by", "offset", "lang", "langs", "xlrc"] as const;
+const KNOWN_META_ORDER = ["ti", "ar", "al", "length", "by", "offset", "lang", "langs", "xlrc"] as const;
 
 export function serializeXLRC(file: XLRCFile): string {
   const output: string[] = [];

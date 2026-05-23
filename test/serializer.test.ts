@@ -25,6 +25,8 @@ describe("serializeXLRC", () => {
     const file: XLRCFile = {
       meta: {
         ti: "Manual",
+        al: "Manual Album",
+        length: "03:42",
         lang: "ja",
         langs: ["ja", "en"]
       },
@@ -50,6 +52,8 @@ describe("serializeXLRC", () => {
     expect(serializeXLRC(file)).toBe(
       [
         "[ti:Manual]",
+        "[al:Manual Album]",
+        "[length:03:42]",
         "[lang:ja]",
         "[langs:ja,en]",
         "",

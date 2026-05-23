@@ -31,6 +31,13 @@ describe("parseXLRC", () => {
     expect(file.warnings).toEqual([]);
   });
 
+  it("parses length headers as metadata", () => {
+    const file = parseXLRC("[ti:Length Test]\n[length:03:42]\n[00:00.00]x\n");
+
+    expect(file.meta.length).toBe("03:42");
+    expect(file.warnings).toEqual([]);
+  });
+
   it("parses word timing, furigana, and multiple translations", () => {
     const file = parseXLRC(fixture("full.xlrc"));
     const timedLine = file.lines[1];

@@ -24,12 +24,13 @@ UTF-8. Required.
 
 ## Header Tags
 
-Standard LRC header tags are supported and carry the same meaning. XLRC adds two new optional tags:
+Standard LRC header tags are supported and carry the same meaning. XLRC defines these optional metadata tags:
 
 ```
 [ti:Title]
 [ar:Artist]
 [al:Album]
+[length:03:42]
 [by:Contributor]
 [offset:+/- ms]
 [lang:ja]
@@ -38,6 +39,7 @@ Standard LRC header tags are supported and carry the same meaning. XLRC adds two
 
 | Tag | Description |
 |-----|-------------|
+| `length` | Track duration in `mm:ss` format; informational only |
 | `lang` | Primary language of the lyrics (BCP 47 code) |
 | `langs` | Comma-separated list of all languages present in the file, including translations |
 

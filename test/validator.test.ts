@@ -15,9 +15,24 @@ describe("validateXLRC", () => {
     expect(result.warnings).toEqual([]);
   });
 
+  it("accepts files without length metadata", () => {
+    const result = validateXLRC(parseXLRC("[ti:No Length]\n[00:00.00]x\n"));
+
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("warns on malformed length metadata", () => {
+    const result = validateXLRC(parseXLRC("[length:03:99]\n[00:00.00]x\n"));
+
+    expect(result.valid).toBe(false);
+    expect(result.warnings.map((warning) => warning.code)).toEqual(["invalid-length"]);
+  });
+
   it("warns on invalid structured data", () => {
     const file: XLRCFile = {
       meta: {
+        length: "3:99",
         offset: 1.5,
         lang: "",
         langs: ["ja", ""]
@@ -53,6 +68,7 @@ describe("validateXLRC", () => {
     expect(result.valid).toBe(false);
     expect(result.warnings.map((warning) => warning.code)).toEqual([
       "invalid-offset",
+      "invalid-length",
       "invalid-lang",
       "invalid-langs",
       "invalid-line-timestamp",

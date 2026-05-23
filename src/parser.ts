@@ -20,7 +20,7 @@ const ANY_ANGLE_TAG_PATTERN = /<[^>]*>/g;
 const KANA_PATTERN = /^[\u3040-\u309f\u30a0-\u30ff\u31f0-\u31ff\uff66-\uff9f]+$/u;
 const KANJI_PATTERN = /[\u3400-\u9fff々〆ヵヶ]/u;
 
-const KNOWN_HEADERS = new Set(["ti", "ar", "al", "by", "offset", "lang", "langs", "xlrc"]);
+const KNOWN_HEADERS = new Set(["ti", "ar", "al", "length", "by", "offset", "lang", "langs", "xlrc"]);
 
 interface TimestampResult {
   timestamp: number;

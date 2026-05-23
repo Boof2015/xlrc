@@ -4,6 +4,7 @@ export interface XLRCMeta {
   ti?: string;
   ar?: string;
   al?: string;
+  length?: string;
   by?: string;
   offset?: number;
   lang?: string;
