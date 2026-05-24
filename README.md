@@ -13,7 +13,7 @@ npm install @boof2015/xlrc
 ## Usage
 
 ```ts
-import { parseXLRC, serializeXLRC, validateXLRC } from "@boof2015/xlrc";
+import { lookup, parseXLRC, serializeXLRC, validateXLRC } from "@boof2015/xlrc";
 
 const source = `[ti:Example]
 [lang:ja]
@@ -35,6 +35,21 @@ console.log(result.valid);
 // true
 
 const xlrc = serializeXLRC(file);
+```
+
+Look up lyrics from an xlrcdb-compatible static data source:
+
+```ts
+const lookupResult = await lookup({
+  artist: "Example Artist",
+  title: "Example Track",
+  length: 222,
+  source: "https://example.com/xlrcdb"
+});
+
+if (lookupResult.found) {
+  console.log(lookupResult.lyrics.lines);
+}
 ```
 
 ## LRC Compatibility
@@ -74,6 +89,14 @@ Serializes a structured XLRC object to canonical XLRC text.
 ### `validateXLRC(file: XLRCFile): ValidationResult`
 
 Validates structured XLRC data and returns warnings for invalid metadata, timestamps, translations, furigana, and word timing data.
+
+### `lookup(options: LookupOptions): Promise<LookupResult>`
+
+Looks up and parses lyrics from an xlrcdb-compatible static deployment. The client fetches `index/aliases.json`, the matched per-artist index, then the matched `.xlrc` file.
+
+Track matching uses normalized artist/title strings and a ±2 second duration tolerance. Pass `fetch` in `LookupOptions` to inject a custom fetch implementation for tests or non-browser runtimes.
+
+Lower-level helpers are also exported: `normalizeLookupKey()`, `fetchAliasesIndex()`, `findArtist()`, `fetchArtistIndex()`, and `findTrack()`.
 
 ## Development
 

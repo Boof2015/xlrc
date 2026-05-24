@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
-    "test": "vitest run test/parser.test.ts test/serializer.test.ts test/validator.test.ts",
+    "test": "vitest run test/parser.test.ts test/serializer.test.ts test/validator.test.ts test/lookup.test.ts",
     "typecheck": "tsc --noEmit",
     "vscode:compile": "npm --prefix vscode-xlrc run compile",
     "vscode:test": "npm --prefix vscode-xlrc test",
