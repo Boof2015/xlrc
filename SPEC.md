@@ -169,6 +169,25 @@ Contributors should use these codes consistently. Parsers must not hard-code lan
 
 ---
 
+### Original Language Requirement
+
+The main lyric line MUST contain the original-language text of the song. Translations, romanizations, and transliterations belong exclusively in `[>lang]` subordinate lines.
+
+```
+[00:12.40]私が歌う         ← correct: original Japanese as main line
+[>en]I sing
+[>ja-Latn]watashi ga utau
+
+[00:12.40]watashi ga utau  ← incorrect: romanization as main line
+[>ja]私が歌う
+```
+
+The `[lang:]` header tag MUST reflect the language of the main lyric lines, not the translations. The first entry in `[langs:]` MUST be the original language.
+
+**Parser behavior:** Parsers must not attempt language detection to enforce this rule at runtime. This is a contributor constraint, enforced by validation tooling (e.g. xlrcdb CI) rather than at parse time.
+
+---
+
 ### Multi-Voice
 
 Voice attribution is an optional inline tag at the start of a lyric line:
